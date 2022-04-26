@@ -1,0 +1,6 @@
+module: satosa.micro_services.nameid_attribute_microservice.NameIDAttribute
+name: NameIDAttribute
+config:
+  nameid_attribute: saml2nameidpersistent
+  sp_entity_id: https://proxy.aai.muni.cz/SAML2/proxy.xml
+  subject_attribute: publicid
