@@ -1,4 +1,4 @@
 SATOSA~=8.1.0
 pysaml2~=7.1.2
 requests~=2.27.1
-perun.connector~=1.0.1
+perun.connector~=1.0.2
