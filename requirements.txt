@@ -3,3 +3,4 @@ pysaml2~=7.1.2
 requests~=2.27.1
 perun.connector~=1.1.2
 pycurl~=7.45.1
+PyYAML~=6.0
