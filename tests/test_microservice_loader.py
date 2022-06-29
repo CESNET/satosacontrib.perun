@@ -27,6 +27,8 @@ class TestData(InternalData):
 
 class Loader:
     GLOBAL_CONFIG = {
+        'eduperson_entitlement': 'edu_person_entitlement',
+        'forwarded_eduperson_entitlement': 'forwarded_edu_person_entitlement',
         "perun_user_id_attribute": "example_user_id",
         "perun_login_attribute": "example_login",
         "attrs_cfg_path": "example_path",
@@ -43,12 +45,12 @@ class Loader:
         self.name = name_of_microservice
 
     @patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_global_cfg")
-    @patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_attributes_map")
+    @patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_attributes_map") # noqa
     @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.__init__")
     def create_mocked_instance(
         self, mock_request, mock_request2, mock_request3
     ):  # noqa e501
-        ConfigStore.get_global_cfg = MagicMock(return_value=Loader.GLOBAL_CONFIG)
+        ConfigStore.get_global_cfg = MagicMock(return_value=Loader.GLOBAL_CONFIG) # noqa
         ConfigStore.get_attributes_map = MagicMock(return_value=None)
         AdaptersManager.__init__ = MagicMock(return_value=None)
         my_class = getattr(satosacontrib.perun.micro_services, self.name)

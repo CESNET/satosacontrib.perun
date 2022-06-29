@@ -16,5 +16,6 @@ setup(
         "PyYAML>=6.0,<7",
         "SQLAlchemy>=1.4.39,<2",
         "jwcrypto>=1.3.1,<2",
+        "natsort~=8.1.0"
     ],
 )

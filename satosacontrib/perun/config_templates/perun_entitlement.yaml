@@ -1,0 +1,14 @@
+module: satosacontrib.perun.micro_services.cardinality_single_microservice.PerunEntitlement
+name: PerunEntitlement
+config:
+  entitlement_extended: True / False
+  global_cfg_path: path_to_global_cfg
+  group_name_AARC: True / False
+  group_mapping:
+    entity_id_1:
+      group_1: mapped_group1
+      group_2: mapped_group2
+    "": # default
+      default_group: default_group_mapped
+  entitlement_prefix: prefix
+  entitlement_authority: authority
