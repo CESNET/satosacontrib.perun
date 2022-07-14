@@ -12,7 +12,7 @@ class Loader:
     @patch("utils.ConfigStore.ConfigStore.get_global_cfg")
     @patch("utils.ConfigStore.ConfigStore.get_attributes_map")
     @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.__init__")
-    def __create_mocked_instance(self, mock_request, mock_request2, mock_request3): # noqa e501
+    def create_mocked_instance(self, mock_request, mock_request2, mock_request3): # noqa e501
         ConfigStore.get_global_cfg = MagicMock(return_value=self.global_config)
         ConfigStore.get_attributes_map = MagicMock(return_value=None)
         AdaptersManager.__init__ = MagicMock(return_value=None)
