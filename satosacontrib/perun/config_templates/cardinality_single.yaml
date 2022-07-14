@@ -1,0 +1,6 @@
+module: satosacontrib.perun.micro_services.cardinality_single_microservice.CardinalitySingle
+name: CardinalitySingle
+config:
+  attributes:
+    - uniqueid
+    - edupersonprincipalname

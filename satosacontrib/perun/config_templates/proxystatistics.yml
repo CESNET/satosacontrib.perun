@@ -1,0 +1,11 @@
+module: satosacontrib.perun.micro_services.proxystatistics_microservice.ProxyStatistics
+name: ProxyStatistics
+config:
+  user_identificator: user_id
+  stats_user: user
+  stats_password: mypasswd
+  stats_db: mydb
+  stats_hostname: hostname
+  stats_port: 6432
+  driver: psycopg2
+  dialect: postgresql

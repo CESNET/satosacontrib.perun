@@ -8,7 +8,7 @@ import time
 
 from json import dumps, loads
 
-from utils.CurlConnectorInterface import CurlInterface
+from satosacontrib.perun.utils.CurlConnectorInterface import CurlInterface
 from perun.connector import Logger
 
 
