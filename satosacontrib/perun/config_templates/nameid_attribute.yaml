@@ -1,4 +1,4 @@
-module: satosa.micro_services.nameid_attribute_microservice.NameIDAttribute
+module: satosacontrib.perun.micro_services.nameid_attribute_microservice.NameIDAttribute
 name: NameIDAttribute
 config:
   nameid_attribute: saml2nameidpersistent

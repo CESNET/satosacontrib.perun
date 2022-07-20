@@ -1,4 +1,4 @@
-module: satosa.micro_services.perun_identity_beta_microservice.PerunIdentityBeta
+module: satosacontrib.perun.micro_services.perun_identity_beta_microservice.PerunIdentityBeta
 name: PerunIdentityBeta
 config:
   rpc_username: usrname
