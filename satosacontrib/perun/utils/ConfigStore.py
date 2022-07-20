@@ -23,7 +23,7 @@ class ConfigStore:
             ConfigStore.__global_config is None
             or ConfigStore.__global_cfg_current_file != filepath
         ):
-            ConfigStore.__load_cfg(filepath, "__global_config")
+            ConfigStore.__load_cfg(filepath, "_ConfigStore__global_config")
             ConfigStore.__global_cfg_current_file = filepath
         return ConfigStore.__global_config
 
@@ -33,6 +33,6 @@ class ConfigStore:
             ConfigStore.__global_attributes_map is None
             or ConfigStore.__global_attributes_map_file != filepath
         ):
-            ConfigStore.__load_cfg(filepath, "__global_attributes_map")
+            ConfigStore.__load_cfg(filepath, "_ConfigStore__global_attributes_map")
             ConfigStore.__global_attributes_map_file = filepath
         return ConfigStore.__global_attributes_map

@@ -3,15 +3,16 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 from perun.connector import User
-from perun.connector.adapters.AdaptersManager import AdaptersManager
+from perun.connector import AdaptersManager
 from satosa.context import Context
 from satosa.exception import SATOSAError
 from satosa.internal import InternalData
 from satosa.micro_services.base import MicroService
 
-from microservices.perun_user_microservice import PerunUser
-from utils.ConfigStore import ConfigStore
-from utils.Utils import Utils
+from satosacontrib.perun.micro_services.perun_user_microservice import PerunUser
+from satosacontrib.perun.utils.ConfigStore import ConfigStore
+
+from satosacontrib.perun.utils.Utils import Utils
 
 MICROSERVICE_CONFIG = {
     "global_cfg_filepath": "example_path",
@@ -36,8 +37,8 @@ GLOBAL_CONFIG = {
 }
 
 
-@patch("utils.ConfigStore.ConfigStore.get_global_cfg")
-@patch("utils.ConfigStore.ConfigStore.get_attributes_map")
+@patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_global_cfg")
+@patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_attributes_map")
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.__init__")
 def initialize_microservice(
     microservice_config, mock_request_1, mock_request_2, mock_request_3
@@ -65,7 +66,7 @@ def test_process_requester_not_allowed():
 @patch(
     "perun.connector.adapters.AdaptersManager.AdaptersManager.get_perun_user"
 )
-@patch("microservices.perun_user_microservice.PerunUser.handle_user_not_found")
+@patch("satosacontrib.perun.micro_services.perun_user_microservice.PerunUser.handle_user_not_found")
 def test_process_user_not_found(mock_request_1, mock_request_2):
     data_with_non_existent_user = InternalData()
     data_with_non_existent_user.requester = "allowed_req_1"
@@ -128,7 +129,7 @@ def test_handle_user_not_found_missing_registration_link():
         )
 
 
-@patch("utils.Utils.Utils.secure_redirect_with_nonce")
+@patch("satosacontrib.perun.utils.Utils.Utils.secure_redirect_with_nonce")
 def test_handle_user_not_found_successful_redirect(mock_request_1):
     Utils.secure_redirect_with_nonce = MagicMock(return_value=None)
     MICROSERVICE.handle_user_not_found(None, None, None, None)
@@ -136,8 +137,8 @@ def test_handle_user_not_found_successful_redirect(mock_request_1):
     Utils.secure_redirect_with_nonce.assert_called()
 
 
-@patch("utils.Utils.Utils.handle_registration_response")
-@patch("microservices.perun_user_microservice.PerunUser.process")
+@patch("satosacontrib.perun.utils.Utils.Utils.handle_registration_response")
+@patch("satosacontrib.perun.micro_services.perun_user_microservice.PerunUser.process")
 def test_handle_registration_response(mock_request_1, mock_request_2):
     expected_result = "process result"
     Utils.handle_registration_response = MagicMock(

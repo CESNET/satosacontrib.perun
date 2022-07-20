@@ -8,8 +8,8 @@ from satosa.internal import InternalData
 from satosa.micro_services.base import ResponseMicroService
 from satosa.response import Redirect
 
-from utils.ConfigStore import ConfigStore
-from utils.Utils import Utils
+from satosacontrib.perun.utils.ConfigStore import ConfigStore
+from satosacontrib.perun.utils.Utils import Utils
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ class PerunUser(ResponseMicroService):
         global_config = ConfigStore.get_global_cfg(
             config["global_cfg_filepath"]
         )
+        logger.info("GLOBAL CONFIG:", global_config)
 
         self.__perun_user_id_attr = global_config["perun_user_id_attribute"]
         self.__perun_login_attribute = global_config["perun_login_attribute"]
