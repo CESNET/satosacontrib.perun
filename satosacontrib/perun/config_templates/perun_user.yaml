@@ -1,0 +1,11 @@
+module: satosa.micro_services.perun_user_microservice.PerunUser
+name: PerunUser
+config:
+  global_cfg_filepath: filepath
+  internal_login_attribute: publicid
+  internal_extsource_attribute: urn:cesnet:proxyidp:attribute:sourceIdPEntityID
+  proxy_extsource_name: https://proxy.aai.muni.cz/SAML2/proxy.xml
+  allowed_requesters:
+    - https://cloud4.perun-aai.org/sp/shibboleth
+  registration_page_url: https://example.com/register/
+  registration_result_url: https://example.com/result/
