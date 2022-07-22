@@ -1,6 +1,0 @@
-module: satosa.micro_services.cardinality_single_microservice.CardinalitySingle
-name: CardinalitySingle
-config:
-  attributes:
-    - uniqueid
-    - edupersonprincipalname

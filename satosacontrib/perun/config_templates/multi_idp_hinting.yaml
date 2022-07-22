@@ -1,4 +1,4 @@
-module: satosa.micro_services.multi_idphint_microservice.MultiIdpHinting
+module: satosacontrib.perun.micro_services.multi_idphint_microservice.MultiIdpHinting
 name: MultiIdpHinting
 config:
   entity_id_mapping:

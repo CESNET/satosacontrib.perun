@@ -21,9 +21,7 @@ class NameIDAttribute(ResponseMicroService):
         """
         if data.subject_type == NAMEID_FORMAT_PERSISTENT and data.subject_id:
             data.attributes[self.__nameid_attribute] = "{}!{}!{}".format(
-                data["auth_info"]["issuer"],
-                self.__sp_entity_id,
-                data.subject_id,
+                data["auth_info"]["issuer"], self.__sp_entity_id, data.subject_id
             )
 
         if self.__subject_attribute:
