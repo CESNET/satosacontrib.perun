@@ -15,5 +15,6 @@ setup(
         "pycurl>=7.45.1,<8",
         "PyYAML>=6.0,<7",
         "SQLAlchemy>=1.4.39,<2",
-    ],
+        "jwcrypto>=1.3.1,<2"
+    ]
 )
