@@ -1,5 +1,4 @@
 import logging
-import json
 
 try:
     from simplejson.errors import JSONDecodeError
@@ -7,7 +6,6 @@ except ImportError:
     from json.decoder import JSONDecodeError
 import requests
 from requests.auth import HTTPBasicAuth
-from satosa.context import Context
 from satosa.micro_services.base import ResponseMicroService
 
 logger = logging.getLogger(__name__)
@@ -31,10 +29,7 @@ class PerunIdentityBeta(ResponseMicroService):
         user = requests.post(
             self.__rpc_url
             + "/ba/rpc/json/usersManager/getUserByExtSourceNameAndExtLogin",
-            json={
-                "extSourceName": issuer_id,
-                "extLogin": user_external_id,
-            },
+            json={"extSourceName": issuer_id, "extLogin": user_external_id},
             auth=auth,
         )
         if user.status_code != 200:
@@ -45,10 +40,7 @@ class PerunIdentityBeta(ResponseMicroService):
             return None
         login = requests.post(
             self.__rpc_url + "/ba/rpc/json/attributesManager/getAttribute",
-            json={
-                "user": user["id"],
-                "attributeName": self.__perun_login_attribute,
-            },
+            json={"user": user["id"], "attributeName": self.__perun_login_attribute},
             auth=auth,
         )
         if login.status_code != 200:

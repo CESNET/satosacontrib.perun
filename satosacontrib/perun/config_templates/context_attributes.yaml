@@ -1,4 +1,4 @@
-module: satosa.micro_services.context_attributes_microservice.ContextAttributes
+module: satosacontrib.perun.micro_services.context_attributes_microservice.ContextAttributes
 name: ContextAttributes
 config:
   target_issuer_attributes:

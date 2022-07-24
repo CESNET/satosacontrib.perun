@@ -4,9 +4,9 @@ from perun.connector.adapters.AdaptersManager import AdaptersManager
 from satosa.micro_services.base import ResponseMicroService
 from satosa.exception import SATOSAError
 from satosa.response import Redirect
-from utils.ConfigStore import ConfigStore
-from utils.PerunConstants import PerunConstants
-from utils.Utils import Utils
+from satosacontrib.perun.utils.ConfigStore import ConfigStore
+from satosacontrib.perun.utils.PerunConstants import PerunConstants
+from satosacontrib.perun.utils.Utils import Utils
 
 
 class PerunEnsureMember(ResponseMicroService):
@@ -31,7 +31,7 @@ class PerunEnsureMember(ResponseMicroService):
             config["global_cfg_path"]
         )
         self.__attr_map_cfg = ConfigStore.get_attributes_map(
-            self.__global_cfg["attr_cfg_path"]
+            self.__global_cfg["attrs_cfg_path"]
         )
         self.__adapters_manager = AdaptersManager(
             self.__global_cfg,
@@ -67,9 +67,9 @@ class PerunEnsureMember(ResponseMicroService):
         self.__group_name = self.__config[self.GROUP_NAME]
 
         self.__unauthorized_redirect_url = \
-            self.__config["unauthorized_redirect_url"]
+            self.__config["unauthorizedRedirectUrl"]
 
-        self.__registration_result_url = config["registration_result_url"]
+        self.__registration_result_url = self.__config["registrationResultUrl"]
 
         self.__endpoint = "/process"
 
@@ -136,26 +136,26 @@ class PerunEnsureMember(ResponseMicroService):
                 self.LOG_PREFIX + 'User is not valid in group ' +
                 self.__group_name + ' - sending to registration.'
             )
-            self.__register(context, data)
+            self.register(context, data)
         elif not member_status and vo_has_registration_form and is_user_in_group: # noqa e501
             self.__logger.debug(
                 self.LOG_PREFIX + 'User is not member of vo ' +
                 self.__vo_short_name + ' - sending to registration.'
             )
-            self.__register(context, data)
+            self.register(context, data)
         elif not member_status and vo_has_registration_form and \
                 not is_user_in_group and group_has_registration_form:
             self.__logger.debug(
-                self.LOG_PREFIX + 'User is anot valid in group ' +
+                self.LOG_PREFIX + 'User is not valid in group ' +
                 self.__group_name + ' - sending to registration.'
             )
-            self.__register(context, data, self.__group_name)
+            self.register(context, data, self.__group_name)
         elif member_status == MemberStatusEnum.EXPIRED \
                 and vo_has_registration_form and is_user_in_group:
             self.__logger.debug(
                 self.LOG_PREFIX + 'User is expired - sending to registration.'
             )
-            self.__register(context, data)
+            self.register(context, data)
         elif member_status == MemberStatusEnum.EXPIRED \
                 and vo_has_registration_form and not is_user_in_group \
                 and group_has_registration_form:
@@ -163,14 +163,13 @@ class PerunEnsureMember(ResponseMicroService):
                 self.LOG_PREFIX + 'User is expired and not in group '
                 + self.__group_name + ' - sending to registration.'
             )
-            self.__register(context, data, self.__group_name)
+            self.register(context, data, self.__group_name)
         else:
             self.__logger.debug(
-                self.LOG_PREFIX + 'User is  not valid in vo/group and cannot'
+                self.LOG_PREFIX + 'User is not valid in vo/group and cannot'
                 ' be sent to the registration - sending to unauthorized'
             )
-            self.__unauthorized(context, data)
-
+            self.unauthorized(context, data)
 
     def __is_user_in_group(self, user, vo):
         member_groups = self.__adapters_manager.get_member_groups(user, vo)
@@ -184,15 +183,15 @@ class PerunEnsureMember(ResponseMicroService):
     def __group_has_registration_form(self, vo):
         try:
             group = self.__adapters_manager.get_group_by_name(vo, self.__group_name) # noqa e501
-        except Exception as e:
+        except Exception:
             group = None
 
         if group is not None:
-            return self.__adapters_manager.has_registration_form(group.id, PerunConstants.GROUP) # noqa e501
+            return self.__adapters_manager.has_registration_form_group(group) # noqa e501
 
         return False
 
-    def __register(self, context, data, group_name=None):
+    def register(self, context, data, group_name=None):
         """
         Registers member according to given data
 
@@ -203,7 +202,7 @@ class PerunEnsureMember(ResponseMicroService):
         """
         params = {}
 
-        callback = "" # ??
+        callback = ""  # ??
 
         if self.__callback_param_name:
             registration_url = self.__register_url + '?vo=' \
@@ -237,7 +236,7 @@ class PerunEnsureMember(ResponseMicroService):
                 self.LOG_PREFIX +  'No configuration for registration set. Cannot proceed.' # noqa e501
             )
 
-    def __unauthorized(self, context, data):
+    def unauthorized(self, context, data):
         """
         Saves user state and redirects them away to a configurable url whenever
         they're not authorized for an operation within this microservice.

@@ -19,15 +19,20 @@ class ConfigStore:
 
     @staticmethod
     def get_global_cfg(filepath):
-        if ConfigStore.__global_config is None or ConfigStore.__global_cfg_current_file != filepath:
+        if (
+            ConfigStore.__global_config is None
+            or ConfigStore.__global_cfg_current_file != filepath
+        ):
             ConfigStore.__load_cfg(filepath, "__global_config")
             ConfigStore.__global_cfg_current_file = filepath
         return ConfigStore.__global_config
 
     @staticmethod
     def get_attributes_map(filepath):
-        if ConfigStore.__global_attributes_map is None or ConfigStore.__global_attributes_map_file != filepath:
+        if (
+            ConfigStore.__global_attributes_map is None
+            or ConfigStore.__global_attributes_map_file != filepath
+        ):
             ConfigStore.__load_cfg(filepath, "__global_attributes_map")
             ConfigStore.__global_attributes_map_file = filepath
         return ConfigStore.__global_attributes_map
-
