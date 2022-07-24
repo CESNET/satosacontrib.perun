@@ -1,0 +1,14 @@
+module: satosacontrib.perun.micro_services.perun_attributes_microservice.PerunAttributes
+name: PerunAttributes
+config:
+  attr_map:
+    ues_cn_attr: cn
+    ues_display_name_attr: display_name
+    ues_given_name_attr: given_name
+    ues_sn_attr: sn
+    ues_organization_attr: o
+    ues_mail_attr: mail
+    ues_affiliation_attr: eduperson_scoped_affiliation
+    ues_entitlement_attr: eduperson_entitlement
+  global_cfg_path: path
+  mode: FULL / PARTIAL
