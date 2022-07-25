@@ -19,11 +19,11 @@ class PerunEnsureMember(ResponseMicroService):
         super().__init__(*args, **kwargs)
 
         self.LOG_PREFIX = 'perun:PerunEnsureMember: '
-        self.REGISTER_URL = 'registerUrl'
-        self.VO_SHORT_NAME = 'voShortName'
-        self.GROUP_NAME = 'groupName'
-        self.CALLBACK_PARAMETER_NAME = 'callbackParameterName'
-        self.PARAM_REGISTRATION_URL = 'registrationUrl'
+        self.REGISTER_URL = 'register_url'
+        self.VO_SHORT_NAME = 'vo_short_name'
+        self.GROUP_NAME = 'group_name'
+        self.CALLBACK_PARAMETER_NAME = 'callback_parameter_name'
+        self.PARAM_REGISTRATION_URL = 'registration_url'
 
         self.__logger = Logger.get_logger(self.__class__.__name__)
 
@@ -35,7 +35,7 @@ class PerunEnsureMember(ResponseMicroService):
             self.__global_cfg["attrs_cfg_path"]
         )
         self.__adapters_manager = AdaptersManager(
-            self.__global_cfg,
+            self.__global_cfg["adapters_manager"],
             self.__attr_map_cfg
         )
 
@@ -68,9 +68,9 @@ class PerunEnsureMember(ResponseMicroService):
         self.__group_name = self.__config[self.GROUP_NAME]
 
         self.__unauthorized_redirect_url = \
-            self.__config["unauthorizedRedirectUrl"]
+            self.__config["unauthorized_redirect_url"]
 
-        self.__registration_result_url = self.__config["registrationResultUrl"]
+        self.__registration_result_url = self.__config["registration_result_url"] # noqa
 
         self.__endpoint = "/process"
 
@@ -82,24 +82,29 @@ class PerunEnsureMember(ResponseMicroService):
         @param context: The current context
         @param data: Data to be modified
         """
-        if data.data['perun']['user']:
-            user = data.data['perun']['user']
-        else:
+        user_id = data.attributes.get(self.__global_cfg["perun_user_id_attribute"]) # noqa
+        if not user_id:
             raise SATOSAError(
-                self.LOG_PREFIX + 'Missing mandatory field '
-                '\'perun.user\' in request. Hint: Did you '
-                'configured PerunIdentity microservice '
-                'before this microservice?'
+                self.LOG_PREFIX + f"Missing mandatory attribute "
+                                  f"'{self.__global_cfg['perun_user_id_attribute']}' " # noqa
+                                  f"in data.attributes. Hint: Did you "
+                                  f"configured PerunUser microservice "
+                                  f"before this microservice?"
             )
+
         try:
-            vo = self.__adapters_manager.get_vo(short_name=self.__vo_short_name)
-        except (AdaptersManagerException, AdaptersManagerNotExistsException) as _:  # noqa e501
+            vo = self.__adapters_manager.get_vo(short_name=self.__vo_short_name) # noqa
+        except (AdaptersManagerException, AdaptersManagerNotExistsException) as e:  # noqa e501
+            self.__logger.debug(e)
+            vo = None
+
+        if not vo:
             raise SATOSAError(
                 self.LOG_PREFIX + 'VO with vo_short_name \''
                 + self.__vo_short_name + '\' not found.'
             )
 
-        self.__handle_user(user, vo, data, context)
+        self.__handle_user(user_id, vo, data, context)
 
         return super().process(context, data)
 
@@ -122,9 +127,9 @@ class PerunEnsureMember(ResponseMicroService):
 
             return
 
-        member_status = self.__adapters_manager.get_member_status_by_user_and_vo(user, vo)  # noqa e501
+        member_status = self.__adapters_manager.get_member_status_by_user_and_vo(user, vo) # noqa
         vo_has_registration_form = \
-            self.__adapters_manager.has_registration_form_by_vo_short_name(self.__vo_short_name) # noqa e501
+            self.__adapters_manager.has_registration_form_vo(vo)
         group_has_registration_form = self.__group_has_registration_form(vo) # noqa e501
 
         if member_status == MemberStatusEnum.VALID and is_user_in_group:
@@ -137,9 +142,9 @@ class PerunEnsureMember(ResponseMicroService):
                 self.LOG_PREFIX + 'User is not valid in group ' +
                 self.__group_name + ' - sending to registration.'
             )
-            self.register(context, data)
+            self.register(context, data, self.__group_name)
         elif not member_status and vo_has_registration_form \
-                and is_user_in_group and not group_has_registration_form: # noqa e501
+                and is_user_in_group: # noqa e501
             self.__logger.debug(
                 self.LOG_PREFIX + 'User is not member of vo ' +
                 self.__vo_short_name + ' - sending to registration.'
@@ -148,7 +153,8 @@ class PerunEnsureMember(ResponseMicroService):
         elif not member_status and vo_has_registration_form and \
                 not is_user_in_group and group_has_registration_form:
             self.__logger.debug(
-                self.LOG_PREFIX + 'User is not valid in group ' +
+                self.LOG_PREFIX + 'User is not member of vo ' +
+                self.__vo_short_name + ' and is not in group ' +
                 self.__group_name + ' - sending to registration.'
             )
             self.register(context, data, self.__group_name)
@@ -174,7 +180,11 @@ class PerunEnsureMember(ResponseMicroService):
             self.unauthorized(context, data)
 
     def __is_user_in_group(self, user, vo):
-        member_groups = self.__adapters_manager.get_member_groups(user, vo)
+        try:
+            member_groups = self.__adapters_manager.get_groups_where_user_as_member_is_active(user, vo) # noqa
+        except (AdaptersManagerException, AdaptersManagerNotExistsException) as e:  # noqa e501
+            self.__logger.debug(e)
+            member_groups = None
 
         for group in member_groups:
             if self.__group_name == group.name:
@@ -185,7 +195,8 @@ class PerunEnsureMember(ResponseMicroService):
     def __group_has_registration_form(self, vo):
         try:
             group = self.__adapters_manager.get_group_by_name(vo, self.__group_name) # noqa e501
-        except (AdaptersManagerException, AdaptersManagerNotExistsException) as _:  # noqa e501
+        except (AdaptersManagerException, AdaptersManagerNotExistsException) as e:  # noqa e501
+            self.__logger.debug(e)
             group = None
 
         if group is not None:
@@ -201,28 +212,25 @@ class PerunEnsureMember(ResponseMicroService):
         @param group_name: name of the group to register to
         @return: Redirect to registration url if possible
         """
-        params = {}
-
         callback = ""  # ??
-
         if self.__callback_param_name:
             registration_url = self.__register_url + '?vo=' \
                                + self.__vo_short_name
+
             if group_name:
                 registration_url += '&group=' + group_name
-
-            params['targetnew'] = callback
-            params['targetexisting'] = callback
-            params['targetextended'] = callback
-
 
             self.__logger.debug(
                 self.LOG_PREFIX + 'Redirecting to \'' + registration_url
                 + ', callback parameter \'' + self.__callback_param_name
                 + '\' set to value \'' + callback + '\'.'
             )
-            data.attributes = params
-            request_data = {}
+
+            request_data = { # noqa
+                'targetnew': callback,
+                'targetexisting': callback,
+                'targetextended': callback,
+            }
 
             return Utils.secure_redirect_with_nonce(
                 context,

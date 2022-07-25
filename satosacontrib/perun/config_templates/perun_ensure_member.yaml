@@ -1,0 +1,9 @@
+module: satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember
+name: PerunEnsureMember
+config:
+  register_url: url
+  callback_parameter_name: callback_parameter_name
+  vo_short_name: vo_short_name
+  group_name: group_name
+  unauthorized_redirect_url: unauthorized_redirect_url
+  registration_result_url: registration_result_url
