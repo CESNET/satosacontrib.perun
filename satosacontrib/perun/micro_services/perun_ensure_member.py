@@ -5,7 +5,6 @@ from satosa.micro_services.base import ResponseMicroService
 from satosa.exception import SATOSAError
 from satosa.response import Redirect
 from satosacontrib.perun.utils.ConfigStore import ConfigStore
-from satosacontrib.perun.utils.PerunConstants import PerunConstants
 from satosacontrib.perun.utils.Utils import Utils
 
 
@@ -137,7 +136,8 @@ class PerunEnsureMember(ResponseMicroService):
                 self.__group_name + ' - sending to registration.'
             )
             self.register(context, data)
-        elif not member_status and vo_has_registration_form and is_user_in_group: # noqa e501
+        elif not member_status and vo_has_registration_form \
+                and is_user_in_group and not group_has_registration_form: # noqa e501
             self.__logger.debug(
                 self.LOG_PREFIX + 'User is not member of vo ' +
                 self.__vo_short_name + ' - sending to registration.'
@@ -157,7 +157,7 @@ class PerunEnsureMember(ResponseMicroService):
             )
             self.register(context, data)
         elif member_status == MemberStatusEnum.EXPIRED \
-                and vo_has_registration_form and not is_user_in_group \
+                and not is_user_in_group and vo_has_registration_form \
                 and group_has_registration_form:
             self.__logger.debug(
                 self.LOG_PREFIX + 'User is expired and not in group '
@@ -210,9 +210,9 @@ class PerunEnsureMember(ResponseMicroService):
             if group_name:
                 registration_url += '&group=' + group_name
 
-            params[PerunConstants.TARGET_NEW] = callback
-            params[PerunConstants.TARGET_EXISTING] = callback
-            params[PerunConstants.TARGET_EXTENDED] = callback
+            params['targetnew'] = callback
+            params['targetexisting'] = callback
+            params['targetextended'] = callback
 
             self.__logger.debug(
                 self.LOG_PREFIX + 'Redirecting to \'' + registration_url

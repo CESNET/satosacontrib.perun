@@ -1,14 +1,17 @@
 import logging
+import pytest
 
 from perun.connector.adapters.AdaptersManager import AdaptersManager
 from satosa.internal import InternalData
 from satosa.context import Context
+from satosa.exception import SATOSAError
 from satosacontrib.perun.micro_services.perun_ensure_member import PerunEnsureMember # noqa e501
 from satosacontrib.perun.utils.ConfigStore import ConfigStore
 from perun.connector.models.MemberStatusEnum import MemberStatusEnum
 from perun.connector.models.User import User
 from perun.connector.models.Group import Group
 from perun.connector.models.VO import VO
+from satosa.micro_services.base import ResponseMicroService
 from unittest.mock import patch, MagicMock
 
 
@@ -74,7 +77,7 @@ class Loader:
         ConfigStore.get_attributes_map = MagicMock(return_value=self.attr_map)
         AdaptersManager.__init__ = MagicMock(return_value=None)
 
-        return PerunEnsureMember(self.config, None, None)
+        return PerunEnsureMember(self.config, 'PerunEnsureMember', 'BaseUrl')
 
 
 TEST_INSTANCE = Loader(CONFIG, GLOBAL_CONFIG, ATTR_MAP).create_mocked_instance() # noqa e501
@@ -113,18 +116,20 @@ def test_handle_user_valid_in_group(mock_request_1, mock_request_2, caplog):
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_member_status_by_user_and_vo") # noqa e501
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.has_registration_form_by_vo_short_name") # noqa e501
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__group_has_registration_form") # noqa e501
+@patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember.register") # noqa e501
 def test_handle_user_not_in_group_has_registration_form(
         mock_request_1,
         mock_request_2,
         mock_request_3,
         mock_request_4,
         mock_request_5,
+        mock_request_6,
         caplog):
     PerunEnsureMember._PerunEnsureMember__is_user_in_group = MagicMock(
-        resturn_value=False
+        return_value=False
     )
     AdaptersManager.get_member_status_by_user_and_vo = MagicMock(
-        return_value=MemberStatusEnum.VALID
+        return_value=None
     )
     AdaptersManager.get_member_status_by_user_and_vo = MagicMock(
         return_value=MemberStatusEnum.VALID
@@ -134,6 +139,9 @@ def test_handle_user_not_in_group_has_registration_form(
     )
     TEST_INSTANCE._PerunEnsureMember__group_has_registration_form = MagicMock(
         return_value=True
+    )
+    PerunEnsureMember.register = MagicMock(
+        return_value=None
     )
 
     message = 'perun:PerunEnsureMember: User is not valid in group ' \
@@ -147,6 +155,7 @@ def test_handle_user_not_in_group_has_registration_form(
         )
         assert message in caplog.text
         assert not result
+        PerunEnsureMember.register.assert_called()
 
 
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__is_user_in_group") # noqa e501
@@ -154,16 +163,18 @@ def test_handle_user_not_in_group_has_registration_form(
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_member_status_by_user_and_vo") # noqa e501
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.has_registration_form_by_vo_short_name") # noqa e501
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__group_has_registration_form") # noqa e501
+@patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember.register") # noqa e501
 def test_handle_user_in_group_vo_has_registration_form(
         mock_request_1,
         mock_request_2,
         mock_request_3,
         mock_request_4,
         mock_request_5,
+        mock_request_6,
         caplog
 ):
     PerunEnsureMember._PerunEnsureMember__is_user_in_group = MagicMock(
-        resturn_value=True
+        return_value=True
     )
     AdaptersManager.get_member_status_by_user_and_vo = MagicMock(
         return_value=None
@@ -175,6 +186,9 @@ def test_handle_user_in_group_vo_has_registration_form(
         return_value=True
     )
     TEST_INSTANCE._PerunEnsureMember__group_has_registration_form = MagicMock(
+        return_value=None
+    )
+    PerunEnsureMember.register = MagicMock(
         return_value=None
     )
 
@@ -189,6 +203,7 @@ def test_handle_user_in_group_vo_has_registration_form(
         )
         assert message in caplog.text
         assert not result
+        PerunEnsureMember.register.assert_called()
 
 
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__is_user_in_group") # noqa e501
@@ -196,16 +211,18 @@ def test_handle_user_in_group_vo_has_registration_form(
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_member_status_by_user_and_vo") # noqa e501
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.has_registration_form_by_vo_short_name") # noqa e501
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__group_has_registration_form") # noqa e501
+@patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember.register") # noqa e501
 def test_handle_user_vo_and_group_have_registratiion_form(
         mock_request_1,
         mock_request_2,
         mock_request_3,
         mock_request_4,
         mock_request_5,
+        mock_request_6,
         caplog
 ):
     PerunEnsureMember._PerunEnsureMember__is_user_in_group = MagicMock(
-        resturn_value=False
+        return_value=False
     )
     AdaptersManager.get_member_status_by_user_and_vo = MagicMock(
         return_value=None
@@ -218,6 +235,9 @@ def test_handle_user_vo_and_group_have_registratiion_form(
     )
     TEST_INSTANCE._PerunEnsureMember__group_has_registration_form = MagicMock(
         return_value=True
+    )
+    PerunEnsureMember.register = MagicMock(
+        return_value=None
     )
 
     message = 'perun:PerunEnsureMember: User is not valid in group ' \
@@ -232,6 +252,7 @@ def test_handle_user_vo_and_group_have_registratiion_form(
         )
         assert message in caplog.text
         assert not result
+        PerunEnsureMember.register.assert_called()
 
 
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__is_user_in_group") # noqa e501
@@ -239,16 +260,18 @@ def test_handle_user_vo_and_group_have_registratiion_form(
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_member_status_by_user_and_vo") # noqa e501
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.has_registration_form_by_vo_short_name") # noqa e501
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__group_has_registration_form") # noqa e501
+@patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember.register") # noqa e501
 def test_handle_user_expired_user(
         mock_request_1,
         mock_request_2,
         mock_request_3,
         mock_request_4,
         mock_request_5,
+        mock_request_6,
         caplog
 ):
     PerunEnsureMember._PerunEnsureMember__is_user_in_group = MagicMock(
-        resturn_value=True
+        return_value=True
     )
     AdaptersManager.get_member_status_by_user_and_vo = MagicMock(
         return_value=None
@@ -260,6 +283,9 @@ def test_handle_user_expired_user(
         return_value=True
     )
     TEST_INSTANCE._PerunEnsureMember__group_has_registration_form = MagicMock(
+        return_value=None
+    )
+    PerunEnsureMember.register = MagicMock(
         return_value=None
     )
 
@@ -275,6 +301,7 @@ def test_handle_user_expired_user(
         )
         assert message in caplog.text
         assert not result
+        PerunEnsureMember.register.assert_called()
 
 
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__is_user_in_group") # noqa e501
@@ -282,16 +309,18 @@ def test_handle_user_expired_user(
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_member_status_by_user_and_vo") # noqa e501
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.has_registration_form_by_vo_short_name") # noqa e501
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__group_has_registration_form") # noqa e501
+@patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember.register") # noqa e501
 def test_handle_user_expired_not_in_group(
         mock_request_1,
         mock_request_2,
         mock_request_3,
         mock_request_4,
         mock_request_5,
+        mock_request_6,
         caplog
 ):
     PerunEnsureMember._PerunEnsureMember__is_user_in_group = MagicMock(
-        resturn_value=False
+        return_value=False
     )
     AdaptersManager.get_member_status_by_user_and_vo = MagicMock(
         return_value=None
@@ -304,6 +333,9 @@ def test_handle_user_expired_not_in_group(
     )
     TEST_INSTANCE._PerunEnsureMember__group_has_registration_form = MagicMock(
         return_value=True
+    )
+    PerunEnsureMember.register = MagicMock(
+        return_value=None
     )
 
     message = 'perun:PerunEnsureMember: User is expired and not in group ' \
@@ -318,6 +350,7 @@ def test_handle_user_expired_not_in_group(
         )
         assert message in caplog.text
         assert not result
+        PerunEnsureMember.register.assert_called()
 
 
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__is_user_in_group") # noqa e501
@@ -325,16 +358,18 @@ def test_handle_user_expired_not_in_group(
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_member_status_by_user_and_vo") # noqa e501
 @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.has_registration_form_by_vo_short_name") # noqa e501
 @patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__group_has_registration_form") # noqa e501
+@patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember.unauthorized") # noqa e501
 def test_handle_user_unauthorized(
         mock_request_1,
         mock_request_2,
         mock_request_3,
         mock_request_4,
         mock_request_5,
+        mock_request_6,
         caplog
 ):
     PerunEnsureMember._PerunEnsureMember__is_user_in_group = MagicMock(
-        resturn_value=False
+        return_value=False
     )
     AdaptersManager.get_member_status_by_user_and_vo = MagicMock(
         return_value=MemberStatusEnum.INVALID
@@ -347,6 +382,9 @@ def test_handle_user_unauthorized(
     )
     TEST_INSTANCE._PerunEnsureMember__group_has_registration_form = MagicMock(
         return_value=False
+    )
+    PerunEnsureMember.unauthorized = MagicMock(
+        return_value=None
     )
 
     message = 'perun:PerunEnsureMember: User is not valid in vo/group and ' \
@@ -361,3 +399,69 @@ def test_handle_user_unauthorized(
         )
         assert message in caplog.text
         assert not result
+        PerunEnsureMember.unauthorized.assert_called()
+
+
+@patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_vo") # noqa e501
+def test_process_error(mock_request):
+    data_wrong = {
+        'perun': {
+            'user': None
+        }
+    }
+
+    data_correct = {
+        'perun': {
+            'user': 'Joe Doe'
+        }
+    }
+
+    expected_error_message = 'perun:PerunEnsureMember: Missing ' \
+                             'mandatory field \'perun.user\' in ' \
+                             'request. Hint: Did you configured ' \
+                             'PerunIdentity microservice before ' \
+                             'this microservice?'
+
+    with pytest.raises(SATOSAError) as error:
+        _ = TEST_INSTANCE.process(TEST_CONTEXT, TestData(data_wrong, ATTRIBUTES))  # noqa e501
+
+    assert str(error.value.args[0]) == expected_error_message
+
+    AdaptersManager.get_vo = MagicMock(
+        return_value=None
+    )
+
+    expected_error_message = 'perun:PerunEnsureMember: VO with' \
+                             ' vo_short_name \'voShortName\' not found.'
+
+    with pytest.raises(SATOSAError) as error:
+        _ = TEST_INSTANCE.process(TEST_CONTEXT, TestData(data_correct, ATTRIBUTES)) # noqa e501  # noqa e501
+
+    assert str(error.value.args[0]) == expected_error_message
+
+
+@patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_vo") # noqa e501
+@patch("satosacontrib.perun.micro_services.perun_ensure_member.PerunEnsureMember._PerunEnsureMember__handle_user") # noqa e501
+@patch("satosa.micro_services.base.ResponseMicroService.process")
+def test_process(mock_request_1, mock_request_2, mock_request_3):
+    data = {
+        'perun': {
+            'user': 'Joe Doe'
+        }
+    }
+
+    AdaptersManager.get_vo = MagicMock(
+        return_value='not None'
+    )
+
+    PerunEnsureMember._PerunEnsureMember__handle_user = MagicMock(
+        return_value=None
+    )
+
+    ResponseMicroService.process = MagicMock(
+        return_value=None
+    )
+
+    _ = TEST_INSTANCE.process(TEST_CONTEXT, TestData(data, ATTRIBUTES))
+    PerunEnsureMember._PerunEnsureMember__handle_user.assert_called()
+    ResponseMicroService.process.assert_called()
