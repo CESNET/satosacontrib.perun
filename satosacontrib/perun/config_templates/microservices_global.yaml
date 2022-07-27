@@ -1,0 +1,37 @@
+perun_user_id_attribute: perunUserId
+perun_login_attribute: perunUserLogin
+attrs_cfg_path: filepath
+adapters_manager:
+  adapters:
+    - type: ldap
+      #1-X 1 highest
+      priority: 1
+      rp_id_attribute: urn:perun:facility:attribute-def:def:rpIdentifier
+      username: cn=admin,dc=muni,dc=cz
+      base_dn: dc=muni,dc=cz
+      password: mypassword
+      start_tls: True
+      servers:
+        - hostname: ldap://openldap
+          port: 389
+        - hostname: ldap://openldap2
+          port: 389
+
+    - type: openApi
+      priority: 2
+      rp_id_attribute: urn:perun:facility:attribute-def:def:rpIdentifier
+      host: https://perun.cesnet.cz/krb/rpc
+      #possible values: BasicAuth, ApiKeyAuth, BearerAuth
+      auth_type: BasicAuth
+      #BA
+      username: username
+      password: mypasswd
+      #ApiKeyAuth
+      api_key: your_api_key
+      #BearerAuth
+      access_token: your_bearer_token
+
+jwk:
+  keystore: filepath
+  key_id: ecdsa
+  token_alg: ed25519
