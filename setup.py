@@ -11,9 +11,10 @@ setup(
         "SATOSA==8.0.1",
         "pysaml2>=7.1.2,<8",
         "requests>=2.28.1,<3",
-        "perun.connector>=3.0.0,<4",
+        "perun.connector>=3.1.0,<4",
         "pycurl>=7.45.1,<8",
         "PyYAML>=6.0,<7",
         "SQLAlchemy>=1.4.39,<2",
-    ],
+        "jwcrypto>=1.3.1,<2"
+    ]
 )
