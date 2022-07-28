@@ -3,114 +3,67 @@ import threading
 from perun.connector.adapters.AdaptersManager import AdaptersManager
 from perun.connector.models.User import User
 from perun.connector.models.UserExtSource import UserExtSource
+from perun.connector.adapters.AdaptersManager import AdaptersManagerException # noqa e501
 from satosacontrib.perun.micro_services.update_user_ext_source import UpdateUserExtSource # noqa e501
-from satosa.internal import InternalData
-from satosa.context import Context
 from satosa.exception import SATOSAError
 from satosa.micro_services.base import ResponseMicroService
-from satosacontrib.perun.utils.ConfigStore import ConfigStore
 from unittest.mock import patch, MagicMock
+from tests.test_microservice_loader import Loader, TestData, TestContext
 
 import pytest
 
 
-GLOBAL_CONFIG = {
-    "attrs_cfg_path": "path",
-    "perun_user_id_attr": "user_id"
-}
-
 CONFIG = {
-  'arrayToStringConversion': {
-    'attribute1': 'value',
-    'attribute2': 1,
-    'attribute3': True,
-    'attribute4': ['value1', 'value2'],
-    'attribute5': {
-       'key': 'value'
-    },
-  },
-  'appendOnlyAttrs': {
-    'attribute1': 'value',
-    'attribute2': 1,
-    'attribute3': True,
-    'attribute4': ['value1', 'value2'],
-    'attribute5': {
-       'key': 'value'
-    },
-  },
-  'userIdentifiers': {
-      'eduPersonUniqueId': {"eduPersonUniqueId": 1},
-      'eduPersonPrincipalName': {'eduPersonPrincipalName': 2},
-      'eduPersonTargetedID': {'eduPersonTargetedID': 3},
-      'nameid': {'nameid': 4},
-      'uid': {'uid': 5}
-  },
-  'global_cfg_path': "path"
+  'array_to_string_conversion': ['ues_affiliation_attr',
+                                 'ues_entitlement_attr'],
+  'append_only_attrs': ['ues_entitlement_attr'],
+  'user_identifiers': [
+      'eduperson_unique_id',
+      'eduperson_principal_name',
+      'eduperson_targeted_id',
+      'name_idd',
+      'uid'
+  ],
+  'global_cfg_path': "path",
+  'attr_map': {
+      'ues_cn_attr': 'cn',
+      'ues_display_name_attr': 'display_name',
+      'ues_given_name_attr': 'given_name',
+      'ues_sn_attr': 'sn',
+      'ues_organization_attr': 'o',
+      'ues_mail_attr': 'mail',
+      'ues_affiliation_attr': 'eduperson_scoped_affiliation',
+      'ues_entitlement_attr': 'eduperson_entitlement'
+  }
 }
 
 ATTRIBUTES = {
-    'uid': 'uid',
-    'nameid': 'nameid',
-    'eduPersonTargetedID': 'eduPersonTargetedID',
-    'eduPersonPrincipalName': 'eduPersonPrincipalName',
-    'eduPersonUniqueId': 'eduPersonUniqueId'
+    'cn': ['cn'],
+    'display_name': ['display_name'],
+    'given_name': ['given_name'],
+    'sn': ['sn'],
+    'o': ['o'],
+    'mail': ['mail'],
+    'eduperson_scoped_affiliation': ['eduperson_scoped_affiliation'],
+    'eduperson_entitlement': ['eduperson_entitlement']
 }
 
 DATA = {}
 
-ATTR_MAP = {
-  'eduPersonUniqueId': "eduPersonUniqueId",
-  'eduPersonPrincipalName': 'eduPersonPrincipalName',
-  'eduPersonTargetedID': 'eduPersonTargetedID',
-  'nameid': 'nameid',
-  'uid': 'uid'
-}
-
-
-class TestContext(Context):
-    def __init__(self):
-        super().__init__()
-
-
-class TestData(InternalData):
-    def __init__(self, data, attributes):
-        super().__init__()
-        self.data = data
-        self.attributes = attributes
-        self.auth_info = None
-
-
-class Loader:
-    def __init__(self, config, global_config, attr_map):
-        self.config = config
-        self.global_config = global_config
-        self.attr_map = attr_map
-
-    @patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_global_cfg") # noqa e501
-    @patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_attributes_map") # noqa e501
-    @patch("perun.connector.adapters.AdaptersManager.AdaptersManager.__init__") # noqa e501
-    def create_mocked_instance(self, mock_request, mock_request2, mock_request3): # noqa e501
-        ConfigStore.get_global_cfg = MagicMock(return_value=self.global_config) # noqa e501
-        ConfigStore.get_attributes_map = MagicMock(return_value=self.attr_map)
-        AdaptersManager.__init__ = MagicMock(return_value=None)
-
-        return UpdateUserExtSource(self.config, None, None)
-
-
-TEST_INSTANCE = Loader(CONFIG, GLOBAL_CONFIG, ATTR_MAP).create_mocked_instance() # noqa e501
+TEST_INSTANCE = Loader(CONFIG, UpdateUserExtSource.__name__).create_mocked_instance() # noqa e501
 TEST_DATA = TestData(DATA, ATTRIBUTES)
 USER = User(1, "Joe Doe")
 EXT_SOURCE = UserExtSource(1, "ext_source", "login", USER)
 
 
 @patch(
-    "microservices.update_user_ext_source.UpdateUserExtSource._UpdateUserExtSource__get_user_ext_source" # noqa e501
+    "satosacontrib.perun.micro_services.update_user_ext_source.UpdateUserExtSource._UpdateUserExtSource__get_user_ext_source" # noqa e501
 )
 def test_find_user_ext_source(mock_request_1):
     TEST_INSTANCE._UpdateUserExtSource__find_user_ext_source = MagicMock(return_value=EXT_SOURCE) # noqa e501
 
     assert TEST_INSTANCE._UpdateUserExtSource__find_user_ext_source(
-        "name", ATTRIBUTES, CONFIG['userIdentifiers']
+        "name", ATTRIBUTES, CONFIG['user_identifiers']
     ) == EXT_SOURCE
 
 
@@ -122,15 +75,12 @@ def test_get_attributes_from_perun_error(mock_request_1):
         "attr": 1
     }
 
-    AdaptersManager.get_user_ext_source_attributes = MagicMock(
-        return_value=None
-    )
-
     error_message = "UpdateUserExtSource" + "Getting attributes for UES " \
-                    "was not successful."
+                                            "was not successful."
+
     with pytest.raises(SATOSAError) as error:
         TEST_INSTANCE._UpdateUserExtSource__get_attributes_from_perun(
-            EXT_SOURCE
+            None
         )
         assert str(error.value.args[0]) == error_message
 
@@ -173,27 +123,26 @@ def test_get_attributes_from_perun(mock_request_1):
 
 def test_get_attributes_to_update():
     attrs_from_perun = {
-      'eduPersonUniqueId': 1,
-      'eduPersonPrincipalName': 'newEduPersonPrincipalName',
-      'eduPersonTargetedID': 'newEduPersonTargetedID',
-      'nameid': 'newNameid',
-      'uid': 'newUid'
+      'ues_cn_attr': 1,
+      'ues_display_name_attr': 'display_name',
+      'ues_given_name_attr': 'given_name',
+      'ues_sn_attr': 'sn',
+      'ues_organization_attr': 'o',
+      'ues_mail_attr': 'mail',
+      'ues_affiliation_attr': 'eduperson_scoped_affiliation',
+      'ues_entitlement_attr': 'eduperson_entitlement'
     }
 
     expected_result = [
-        {'eduPersonUniqueId': 'eduPersonUniqueId'},
-        {'eduPersonPrincipalName': 'eduPersonPrincipalName'},
-        {'eduPersonTargetedID': 'eduPersonTargetedID'},
-        {'nameid': 'nameid'},
-        {'uid': 'uid'}
+        {'ues_cn_attr': 'cn'}
     ]
 
     result = TEST_INSTANCE._UpdateUserExtSource__get_attributes_to_update(
         attrs_from_perun,
-        ATTR_MAP,
-        ATTRIBUTES,
-        CONFIG["appendOnlyAttrs"],
-        CONFIG['userIdentifiers']
+        CONFIG['attr_map'],
+        CONFIG['array_to_string_conversion'],
+        CONFIG["append_only_attrs"],
+        ATTRIBUTES
     )
 
     assert result == expected_result
@@ -203,36 +152,16 @@ def test_get_attributes_to_update():
     "satosacontrib.perun.micro_services.update_user_ext_source.UpdateUserExtSource._UpdateUserExtSource__find_user_ext_source" # noqa e501
 )
 def test_run_error(mock_request_1):
-    data_to_conversion_1 = {
-        "attributes": CONFIG['userIdentifiers'],
-        "attrMap": ATTR_MAP,
-        "attrsToConversion": CONFIG['arrayToStringConversion'],
-        "appendOnlyAttrs": CONFIG['appendOnlyAttrs'],
-        "perunUserId": 1,
-        "auth_info": {
-            "issuer": None
-        }
-    }
-
-    data_to_conversion_2 = {
-        "attributes": CONFIG['userIdentifiers'],
-        "attrMap": ATTR_MAP,
-        "attrsToConversion": CONFIG['arrayToStringConversion'],
-        "appendOnlyAttrs": CONFIG['appendOnlyAttrs'],
-        "perunUserId": 1,
+    data_to_conversion = {
+        "attributes": CONFIG['user_identifiers'],
+        "attr_map": CONFIG['attr_map'],
+        "attrs_to_conversion": CONFIG['array_to_string_conversion'],
+        "append_only_attrs": CONFIG['append_only_attrs'],
+        "perun_user_id": 1,
         "auth_info": {
             "issuer": "id"
         }
     }
-
-    error_msg = "UpdateUserExtSource" + 'Invalid attributes from IdP ' \
-                '- Attribute \' is empty'
-
-    with pytest.raises(SATOSAError) as error:
-        TEST_INSTANCE._UpdateUserExtSource__run(
-            data_to_conversion_1
-        )
-        assert str(error.value.args[0]) == error_msg
 
     TEST_INSTANCE._UpdateUserExtSource__find_user_ext_source = MagicMock(
         return_value=None
@@ -240,12 +169,12 @@ def test_run_error(mock_request_1):
 
     error_msg = 'UpdateUserExtSource' + 'There is no UserExtSource that' \
                 ' could be used for user ' \
-                + str(data_to_conversion_2['perunUserId']) \
-                + ' and IdP ' + data_to_conversion_2['auth_info']['issuer']
+                + str(data_to_conversion['perun_user_id']) \
+                + ' and IdP ' + data_to_conversion['auth_info']['issuer']
 
     with pytest.raises(SATOSAError) as error:
         TEST_INSTANCE._UpdateUserExtSource__run(
-            data_to_conversion_2
+            data_to_conversion
         )
         assert str(error.value.args[0]) == error_msg
 
@@ -264,11 +193,11 @@ def test_run_error(mock_request_1):
 )
 def test_run(mock_request_1, mock_request_2, mock_request_3, mock_request_4):
     data_to_conversion = {
-        "attributes": CONFIG['userIdentifiers'],
-        "attrMap": ATTR_MAP,
-        "attrsToConversion": CONFIG['arrayToStringConversion'],
-        "appendOnlyAttrs": CONFIG['appendOnlyAttrs'],
-        "perunUserId": 1,
+        "attributes": CONFIG['user_identifiers'],
+        "attr_map": CONFIG['attr_map'],
+        "attrs_to_conversion": CONFIG['array_to_string_conversion'],
+        "append_only_attrs": CONFIG['append_only_attrs'],
+        "perun_user_id": 1,
         "auth_info": {
             "issuer": "id"
         }
@@ -304,6 +233,6 @@ def test_process(mock_request_1, mock_request_2):
         return_value=None
     )
 
-    _ = TEST_INSTANCE.process(TestContext(), TestData(DATA, {'user_id': '1'}))
+    _ = TEST_INSTANCE.process(TestContext(), TestData(DATA, {'example_user_id': '1'})) # noqa
     threading.Thread.start.assert_called()
     ResponseMicroService.process.assert_called()

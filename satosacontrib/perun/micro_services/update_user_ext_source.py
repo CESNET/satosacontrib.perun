@@ -43,11 +43,12 @@ class UpdateUserExtSource(ResponseMicroService):
 
         self.__config = config
         self.DEFAULT_CONFIG = {
-            'userIdentifiers': ['eduPersonUniqueId',
-                                'eduPersonPrincipalName',
-                                'eduPersonTargetedID',
-                                'nameid',
-                                'uid']
+            'user_identifiers':
+                ['eduPersonUniqueId',
+                 'eduPersonPrincipalName',
+                 'eduPersonTargetedID',
+                 'nameId',
+                 'uid']
         }
 
         self.__logger = Logger.get_logger(self.__class__.__name__)
@@ -59,17 +60,17 @@ class UpdateUserExtSource(ResponseMicroService):
                 self.__global_conf["attrs_cfg_path"]
         )
 
-        self.__perun_id_attr = self.__global_conf['perun_user_id_attr']
+        self.__perun_id_attr = self.__global_conf['perun_user_id_attribute']
         self.__adapters_manager = AdaptersManager(
-            self.__global_conf,
+            self.__global_conf["adapters_manager"],
             self.__attr_map_cfg
         )
         self.__append_only_attrs = []
         self.__array_to_str_conversion = []
-        if config['arrayToStringConversion']:
-            self.__array_to_str_conversion = config['arrayToStringConversion']
-        if config['arrayToStringConversion']:
-            self.__append_only_attrs = config['appendOnlyAttrs']
+        if config['array_to_string_conversion']:
+            self.__array_to_str_conversion = config['array_to_string_conversion'] # noqa e501
+        if config['append_only_attrs']:
+            self.__append_only_attrs = config['append_only_attrs']
 
     def process(self, context, data):
 
@@ -83,10 +84,10 @@ class UpdateUserExtSource(ResponseMicroService):
 
         data_to_conversion = {
             'attributes': data.attributes,
-            'attrMap': self.__attr_map_cfg,
-            'attrsToConversion': self.__array_to_str_conversion,
-            'appendOnlyAttrs': self.__append_only_attrs,
-            'perunUserId': data.attributes[self.__perun_id_attr][0],
+            'attr_map': self.__config['attr_map'],
+            'attrs_to_conversion': self.__array_to_str_conversion,
+            'append_only_attrs': self.__append_only_attrs,
+            'perun_user_id': data.attributes[self.__perun_id_attr],
             'auth_info': data.auth_info
         }
 
@@ -106,14 +107,14 @@ class UpdateUserExtSource(ResponseMicroService):
         """
 
         attrs_from_idp = data_to_conversion['attributes'].copy()
-        attr_map = data_to_conversion['attrMap']
-        serialized_attrs = data_to_conversion['attrsToConversion']
-        append_only_attrs = data_to_conversion['appendOnlyAttrs']
-        user_id = data_to_conversion['perunUserId']
+        attr_map = data_to_conversion['attr_map']
+        serialized_attrs = data_to_conversion['attrs_to_conversion']
+        append_only_attrs = data_to_conversion['append_only_attrs']
+        user_id = data_to_conversion['perun_user_id']
 
         config = self.__get_configuration()
 
-        identifier_attributes = config['userIdentifiers']
+        identifier_attributes = config['user_identifiers']
 
         try:
             ext_source_name = data_to_conversion['auth_info']['issuer']
@@ -207,9 +208,16 @@ class UpdateUserExtSource(ResponseMicroService):
             attributes_from_perun_raw = \
                 self.__adapters_manager.get_user_ext_source_attributes(
                     user_ext_source,
-                    list(self.__attr_map_cfg.keys())
+                    list(self.__config['attr_map'].keys())
                 )
-        except (AdaptersManagerException, AdaptersManagerNotExistsException) as _: # noqa e501
+        except (AdaptersManagerException, AdaptersManagerNotExistsException) as e: # noqa e501
+            self.__logger.debug(e)
+            raise exception.SATOSAError(
+                self.__class__.__name__ + "Getting attributes for UES "
+                                          "was not successful."
+            )
+
+        if not attributes_from_perun_raw:
             raise exception.SATOSAError(
                 self.__class__.__name__ + "Getting attributes for UES "
                                           "was not successful."
@@ -247,19 +255,19 @@ class UpdateUserExtSource(ResponseMicroService):
         """
 
         attrs_to_update = []
-
         for attr_name, attr_value in attributes_from_perun.items():
-            attr = attrs_from_idp.get(attr_map[attr_name], dict())
+            attr = attrs_from_idp.get(attr_map[attr_name])
             if attr_name in append_only_attrs and attr_value and \
                     (is_complex_type(attr_value) or
                      attr_name in serialized_attrs):
-                attr |= attr_value.split(';') if \
+                attr += attr_value.split(';') if \
                     attr_name in serialized_attrs else attr_value
+                attr = list(set(attr))
 
             if is_simple_type(attr_value):
                 new_value = convert_to_string(attr)
             elif is_complex_type(attr_value):
-                new_value = list(set(list(attr.values()))) if attr else []
+                new_value = list(set(attr)) if attr else []
                 if attr_name in serialized_attrs:
                     new_value = convert_to_string(new_value)
             else:
@@ -283,17 +291,18 @@ class UpdateUserExtSource(ResponseMicroService):
         """
 
         try:
+            self.__adapters_manager.update_user_ext_source_last_access(
+                user_ext_source
+            )
+
             self.__adapters_manager.set_user_ext_source_attributes(
                 user_ext_source,
                 attrs_to_update
             )
 
-            self.__adapters_manager.update_user_ext_source_last_access(
-                user_ext_source
-            )
-
             return True
-        except (AdaptersManagerException, AdaptersManagerNotExistsException) as _: # noqa e501
+        except (AdaptersManagerException, AdaptersManagerNotExistsException) as e: # noqa e501
+            self.__logger.debug(e)
             return False
 
     def __get_configuration(self):
