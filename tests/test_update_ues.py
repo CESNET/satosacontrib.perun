@@ -3,6 +3,7 @@ import threading
 from perun.connector.adapters.AdaptersManager import AdaptersManager
 from perun.connector.models.User import User
 from perun.connector.models.UserExtSource import UserExtSource
+from perun.connector.adapters.AdaptersManager import AdaptersManagerException # noqa e501
 from satosacontrib.perun.micro_services.update_user_ext_source import UpdateUserExtSource # noqa e501
 from satosa.internal import InternalData
 from satosa.context import Context
@@ -104,7 +105,7 @@ EXT_SOURCE = UserExtSource(1, "ext_source", "login", USER)
 
 
 @patch(
-    "microservices.update_user_ext_source.UpdateUserExtSource._UpdateUserExtSource__get_user_ext_source" # noqa e501
+    "satosacontrib.perun.micro_services.update_user_ext_source.UpdateUserExtSource._UpdateUserExtSource__get_user_ext_source" # noqa e501
 )
 def test_find_user_ext_source(mock_request_1):
     TEST_INSTANCE._UpdateUserExtSource__find_user_ext_source = MagicMock(return_value=EXT_SOURCE) # noqa e501
@@ -122,15 +123,12 @@ def test_get_attributes_from_perun_error(mock_request_1):
         "attr": 1
     }
 
-    AdaptersManager.get_user_ext_source_attributes = MagicMock(
-        return_value=None
-    )
-
     error_message = "UpdateUserExtSource" + "Getting attributes for UES " \
-                    "was not successful."
+                                            "was not successful."
+
     with pytest.raises(SATOSAError) as error:
         TEST_INSTANCE._UpdateUserExtSource__get_attributes_from_perun(
-            EXT_SOURCE
+            None
         )
         assert str(error.value.args[0]) == error_message
 
@@ -203,18 +201,7 @@ def test_get_attributes_to_update():
     "satosacontrib.perun.micro_services.update_user_ext_source.UpdateUserExtSource._UpdateUserExtSource__find_user_ext_source" # noqa e501
 )
 def test_run_error(mock_request_1):
-    data_to_conversion_1 = {
-        "attributes": CONFIG['userIdentifiers'],
-        "attrMap": ATTR_MAP,
-        "attrsToConversion": CONFIG['arrayToStringConversion'],
-        "appendOnlyAttrs": CONFIG['appendOnlyAttrs'],
-        "perunUserId": 1,
-        "auth_info": {
-            "issuer": None
-        }
-    }
-
-    data_to_conversion_2 = {
+    data_to_conversion = {
         "attributes": CONFIG['userIdentifiers'],
         "attrMap": ATTR_MAP,
         "attrsToConversion": CONFIG['arrayToStringConversion'],
@@ -225,27 +212,18 @@ def test_run_error(mock_request_1):
         }
     }
 
-    error_msg = "UpdateUserExtSource" + 'Invalid attributes from IdP ' \
-                '- Attribute \' is empty'
-
-    with pytest.raises(SATOSAError) as error:
-        TEST_INSTANCE._UpdateUserExtSource__run(
-            data_to_conversion_1
-        )
-        assert str(error.value.args[0]) == error_msg
-
     TEST_INSTANCE._UpdateUserExtSource__find_user_ext_source = MagicMock(
         return_value=None
     )
 
     error_msg = 'UpdateUserExtSource' + 'There is no UserExtSource that' \
                 ' could be used for user ' \
-                + str(data_to_conversion_2['perunUserId']) \
-                + ' and IdP ' + data_to_conversion_2['auth_info']['issuer']
+                + str(data_to_conversion['perunUserId']) \
+                + ' and IdP ' + data_to_conversion['auth_info']['issuer']
 
     with pytest.raises(SATOSAError) as error:
         TEST_INSTANCE._UpdateUserExtSource__run(
-            data_to_conversion_2
+            data_to_conversion
         )
         assert str(error.value.args[0]) == error_msg
 

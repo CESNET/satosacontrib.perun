@@ -215,6 +215,12 @@ class UpdateUserExtSource(ResponseMicroService):
                                           "was not successful."
             )
 
+        if not attributes_from_perun_raw:
+            raise exception.SATOSAError(
+                self.__class__.__name__ + "Getting attributes for UES "
+                                          "was not successful."
+            )
+
         for raw_attr_name, raw_attr_val in attributes_from_perun_raw.items():
             if isinstance(raw_attr_val, dict) and "name" in raw_attr_val:
                 attributes_from_perun[raw_attr_val["name"]] = raw_attr_val
