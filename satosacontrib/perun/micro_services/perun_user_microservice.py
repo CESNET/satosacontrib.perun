@@ -1,7 +1,10 @@
 import logging
 from typing import List
 
-from perun.connector.adapters.AdaptersManager import AdaptersManager, AdaptersManagerNotExistsException
+from perun.connector.adapters.AdaptersManager import (
+    AdaptersManager,
+    AdaptersManagerNotExistsException,
+)
 from satosa.context import Context
 from satosa.exception import SATOSAError
 from satosa.internal import InternalData
@@ -18,29 +21,21 @@ class PerunUser(ResponseMicroService):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         logger.info("PerunUser is active")
-        global_config = ConfigStore.get_global_cfg(
-            config["global_cfg_filepath"]
-        )
+        global_config = ConfigStore.get_global_cfg(config["global_cfg_filepath"])
 
         self.__perun_user_id_attr = global_config["perun_user_id_attribute"]
         self.__perun_login_attribute = global_config["perun_login_attribute"]
         self.__internal_login_attribute = config["internal_login_attribute"]
-        self.__internal_extsource_attribute = config[
-            "internal_extsource_attribute"
-        ]
+        self.__internal_extsource_attribute = config["internal_extsource_attribute"]
         self.__proxy_extsource_name = config["proxy_extsource_name"]
         self.__allowed_requesters = config.get("allowed_requesters", [])
         self.__registration_page_url = config.get("registration_page_url", [])
         self.__registration_result_url = config["registration_result_url"]
 
         adapters_manager_cfg = global_config["adapters_manager"]
-        attrs_map = ConfigStore.get_attributes_map(
-            global_config["attrs_cfg_path"]
-        )
+        attrs_map = ConfigStore.get_attributes_map(global_config["attrs_cfg_path"])
 
-        self.__adapters_manager = AdaptersManager(
-            adapters_manager_cfg, attrs_map
-        )
+        self.__adapters_manager = AdaptersManager(adapters_manager_cfg, attrs_map)
         self.__endpoint = "/process"
         self.__signing_cfg = global_config["jwk"]
 
@@ -53,10 +48,7 @@ class PerunUser(ResponseMicroService):
         @return: loaded newly registered user if registration was successful
         """
         context, data = Utils.handle_registration_response(
-            context,
-            self.__signing_cfg,
-            self.__registration_result_url,
-            self.name,
+            context, self.__signing_cfg, self.__registration_result_url, self.name
         )
         return self.process(context, data)
 
@@ -93,11 +85,7 @@ class PerunUser(ResponseMicroService):
         return super().process(context, data)
 
     def handle_user_not_found(
-        self,
-        name: str,
-        logins: List[str],
-        context: Context,
-        data: InternalData,
+        self, name: str, logins: List[str], context: Context, data: InternalData
     ) -> Redirect:
         """
         Handles a case when user we were looking for wasn't found in the
@@ -135,9 +123,4 @@ class PerunUser(ResponseMicroService):
         @return: url of endpoint for external service to reply to and a method
                  to handle the reply
         """
-        return [
-            (
-                f"^perunuser{self.__endpoint}$",
-                self.__handle_registration_response,
-            )
-        ]
+        return [(f"^perunuser{self.__endpoint}$", self.__handle_registration_response)]

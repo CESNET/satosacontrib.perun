@@ -3,15 +3,18 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 from perun.connector import User
-from perun.connector.adapters.AdaptersManager import AdaptersManager, AdaptersManagerNotExistsException
+from perun.connector.adapters.AdaptersManager import (
+    AdaptersManager,
+    AdaptersManagerNotExistsException,
+)
 from satosa.context import Context
 from satosa.exception import SATOSAError
 from satosa.internal import InternalData
 from satosa.micro_services.base import MicroService
 
 from satosacontrib.perun.micro_services.perun_user_microservice import PerunUser  # noqa
-from satosacontrib.perun.utils.ConfigStore import ConfigStore
 from satosacontrib.perun.utils.Utils import Utils
+from tests.test_microservice_loader import Loader
 
 MICROSERVICE_CONFIG = {
     "global_cfg_filepath": "example_path",
@@ -23,32 +26,7 @@ MICROSERVICE_CONFIG = {
     "registration_result_url": "example_url",
 }
 
-GLOBAL_CONFIG = {
-    "perun_user_id_attribute": "example_user_id",
-    "perun_login_attribute": "example_login",
-    "jwk": {
-        "keystore": "example_keystore",
-        "keyid": "example_keyid",
-        "token_alg": "example_token_alg",
-    },
-    "attrs_cfg_path": "example_path",
-    "adapters_manager": "adapters manager cfg info",
-}
-
-
-@patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_global_cfg")
-@patch("satosacontrib.perun.utils.ConfigStore.ConfigStore.get_attributes_map")
-@patch("perun.connector.adapters.AdaptersManager.AdaptersManager.__init__")
-def initialize_microservice(
-        microservice_config, mock_request_1, mock_request_2, mock_request_3
-) -> PerunUser:
-    ConfigStore.get_global_cfg = MagicMock(return_value=GLOBAL_CONFIG)
-    ConfigStore.get_attributes_map = MagicMock(return_value=None)
-    AdaptersManager.__init__ = MagicMock(return_value=None)
-    return PerunUser(microservice_config, "PerunUser", "base_url")
-
-
-MICROSERVICE = initialize_microservice(MICROSERVICE_CONFIG)
+MICROSERVICE = Loader(MICROSERVICE_CONFIG, "PerunUser").create_mocked_instance()
 
 
 def test_process_requester_not_allowed():
@@ -62,9 +40,7 @@ def test_process_requester_not_allowed():
         assert str(error.value.args[0]) == disallowed_requester_error_message
 
 
-@patch(
-    "perun.connector.adapters.AdaptersManager.AdaptersManager.get_perun_user"
-)
+@patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_perun_user")
 @patch(
     "satosacontrib.perun.micro_services.perun_user_microservice.PerunUser.handle_user_not_found"  # noqa
 )
@@ -74,9 +50,11 @@ def test_process_user_not_found(mock_request_1, mock_request_2):
     data_with_non_existent_user.auth_info.issuer = "example_non_existent_name"
     data_with_non_existent_user.attributes["example_internal_login"] = []
 
-    AdaptersManager.get_perun_user = MagicMock(side_effect=AdaptersManagerNotExistsException(
-        '"name":"UserExtSourceNotExistsException"'
-    ))
+    AdaptersManager.get_perun_user = MagicMock(
+        side_effect=AdaptersManagerNotExistsException(
+            '"name":"UserExtSourceNotExistsException"'
+        )
+    )
     expected_error_message = '"name":"UserExtSourceNotExistsException"'
     PerunUser.handle_user_not_found = MagicMock(return_value=None)
     with pytest.raises(Exception) as error:
@@ -85,9 +63,7 @@ def test_process_user_not_found(mock_request_1, mock_request_2):
         PerunUser.handle_user_not_found.assert_called()
 
 
-@patch(
-    "perun.connector.adapters.AdaptersManager.AdaptersManager.get_perun_user"
-)
+@patch("perun.connector.adapters.AdaptersManager.AdaptersManager.get_perun_user")
 @patch(
     "perun.connector.adapters.AdaptersManager.AdaptersManager.get_user_attributes"  # noqa
 )
@@ -113,7 +89,9 @@ def test_process_user_found(mock_request_1, mock_request_2, mock_request_3):
 def test_handle_user_not_found_missing_registration_link():
     config_without_registration_link = copy.deepcopy(MICROSERVICE_CONFIG)
     config_without_registration_link.pop("registration_page_url")
-    microservice = initialize_microservice(config_without_registration_link)
+    microservice = Loader(
+        config_without_registration_link, "PerunUser"
+    ).create_mocked_instance()
 
     user_name = "example_name"
     user_logins = ["example_login_1", "example_login_2"]
@@ -128,9 +106,7 @@ def test_handle_user_not_found_missing_registration_link():
             user_name, user_logins, Context(), InternalData()
         )
 
-        assert (
-                str(error.value.args[0]) == missing_registration_link_error_message
-        )
+        assert str(error.value.args[0]) == missing_registration_link_error_message
 
 
 @patch("satosacontrib.perun.utils.Utils.Utils.secure_redirect_with_nonce")

@@ -1,4 +1,4 @@
-module: satosa.micro_services.perun_user_microservice.PerunUser
+module: satosacontrib.perun.micro_services.micro_services.perun_user_microservice.PerunUser
 name: PerunUser
 config:
   global_cfg_filepath: filepath
