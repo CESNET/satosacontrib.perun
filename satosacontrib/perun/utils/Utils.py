@@ -35,10 +35,7 @@ class Utils:
 
     @staticmethod
     def __get_jwt(data: dict[str, str], jwk_key: JWK, token_alg: str):
-        token = jwt.JWT(
-            header={"alg": token_alg, "typ": "JWT"},
-            claims=data,
-        )
+        token = jwt.JWT(header={"alg": token_alg, "typ": "JWT"}, claims=data)
         token.make_signed_token(jwk_key)
         return token.serialize()
 
