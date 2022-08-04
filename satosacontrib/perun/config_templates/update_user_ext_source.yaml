@@ -1,0 +1,22 @@
+module: satosacontrib.perun.micro_services.update_user_ext_source.UpdateUserExtSource
+name: UpdateUserExtSource
+config:
+  attr_map:
+    ues_cn_attr: cn
+    ues_display_name_attr: display_name
+    ues_given_name_attr: given_name
+    ues_sn_attr: sn
+    ues_organization_attr: o
+    ues_mail_attr: mail
+    ues_affiliation_attr: eduperson_scoped_affiliation
+    ues_entitlement_attr: eduperson_entitlement
+  array_to_string_conversion:
+    - ues_affiliation_attr
+    - ues_entitlement_attr
+  append_only_attrs:
+    - ues_entitlement_attr
+  global_cfg_path: path
+  user_identifiers:
+    - eduperson_principal_name
+    - internal_user_identifiers
+    - eduperson_unique_id
