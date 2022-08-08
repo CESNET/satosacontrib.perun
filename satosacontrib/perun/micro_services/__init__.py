@@ -8,6 +8,7 @@ from .proxystatistics_microservice import ProxyStatistics
 from .update_user_ext_source import UpdateUserExtSource
 from .perun_ensure_member import PerunEnsureMember
 from .perun_entitlement import PerunEntitlement
+from .perun_attributes_microservice import PerunAttributes
 
 __all__ = [
     "CardinalitySingle",
@@ -19,5 +20,6 @@ __all__ = [
     "ProxyStatistics",
     "UpdateUserExtSource",
     "PerunEnsureMember",
-    "PerunEntitlement"
+    "PerunEntitlement",
+    "PerunAttributes"
 ]
