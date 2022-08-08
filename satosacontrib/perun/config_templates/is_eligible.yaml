@@ -1,0 +1,8 @@
+module: satosacontrib.perun.micro_services.micro_services.is_eligible_microservice.IsEligible
+name: IsEligible
+config:
+  filter_config:
+    trigger_attribute: example_trigger_attribute
+    eligible_last_seen_timestamp_attribute: example_timestamp_attribute
+    validity_period_months: 12
+  unauthorized_redirect_url: https://example.com/unauthorized/
