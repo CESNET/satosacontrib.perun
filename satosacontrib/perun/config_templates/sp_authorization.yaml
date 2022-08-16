@@ -1,0 +1,21 @@
+module: satosacontrib.perun.micro_services.sp_authorization_microservice.SpAuthorization
+name: SpAuthorization
+
+config:
+  global_cfg_filepath: filepath
+  unauthorized_redirect_url: url
+  single_group_registration_url: url
+  register_choose_vo_and_group_url: url
+  notification_url: url
+  registration_result_url: url
+  filter_config:
+    - check_group_membership_attr: check_group_membership_attr
+    - vo_short_names_attr: vo_short_names
+    - registrar_url: registrar_url
+    - allow_registration_attr: allow_registration_attr
+    - registration_link_attr: registration_link_attr
+    - skip_notification_sps:
+        - sp1
+        - sp2
+        - sp3
+    - handle_unsatisfied_membership: handle_unsatisfied_membership
